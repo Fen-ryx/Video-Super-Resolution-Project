@@ -1,0 +1,293 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+# Patches of 8 x 8 are used, with a step size of 4
+# During training, the CNN only needs to learn the mapping of features, reconstruction (unpatchifying) is not required
+# Hence, training involves no unpatchifying
+
+# In[2]:
+
+
+# import statements
+import os
+import cv2 as cv
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+import random
+from patchify import patchify, unpatchify
+
+# torch and related imports
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# to build dataset
+REBUILD_DATA = True
+
+
+# In[3]:
+
+
+# required to create the dataset
+class Create_Dataset():
+    
+    label = r"C:\Users\Gaurav\Datasets\SoC_Assignment\T91"
+    img_count = 0
+    scale_fact = 2
+    global training_data # declared global so that it can be accessed outside the class
+    training_data = [] # will contain bicubic upscaled and original high resolution images
+    
+    def make_training_set(self):
+        
+        for file in tqdm(os.listdir(self.label)):
+            if "png" in file:
+                path = os.path.join(self.label, file)
+                img_hr = cv.imread(path)
+                dim_lr = (int(img_hr.shape[1] / self.scale_fact), int(img_hr.shape[0] / self.scale_fact))
+                img_tp = cv.resize(img_hr, dim_lr)
+                img_lr = cv.resize(img_tp, (img_hr.shape[1], img_hr.shape[0]), interpolation = cv.INTER_CUBIC)
+                training_data.append([img_lr, img_hr]) # img_lr is X, img_hr is y
+                self.img_count += 1
+        
+        random.shuffle(training_data)
+        print("Images Uploaded:", self.img_count)
+
+
+# In[4]:
+
+
+# dataset created
+if REBUILD_DATA:
+    create_dataset = Create_Dataset()
+    create_dataset.make_training_set()
+
+
+# In[5]:
+
+
+# view data using matplotlib
+plt.subplot(121)
+plt.imshow(training_data[0][0])
+plt.subplot(122)
+plt.imshow(training_data[0][1])
+plt.show()
+print(training_data[0][0].shape)
+
+
+# In[6]:
+
+
+# view data using opencv
+cv.imshow("Bicubic Upsampled", training_data[0][0])
+cv.imshow("Original", training_data[0][1])
+cv.waitKey(10000)
+cv.destroyWindow("Bicubic Upsampled")
+cv.destroyWindow("Original")
+
+
+# In[7]:
+
+# breaking the images down into patches
+# each individual patch is passed through the CNN
+patches_list = []
+for i in range(len(training_data)):
+    x_patch = patchify(training_data[i][0], (8, 8, 3), step = 4)
+    y_patch = patchify(training_data[i][1], (8, 8, 3), step = 4)
+    patches_list.append([x_patch, y_patch])
+
+patches_array = np.array(patches_list, dtype = object)
+print(patches_array[1][0].shape) # simply to view patch shape and not commit errors
+
+
+# In[8]:
+
+# hyperparameters
+num_epochs = 8
+learning_rate = 0.001
+
+
+# In[9]:
+
+# Defining the structure of the CNN
+class ConvNet(nn.Module):
+    
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        self.conv1 = nn.Conv2d(3, 64, kernel_size = 9, padding = 2, padding_mode = 'replicate')
+        self.conv2 = nn.Conv2d(64, 32, kernel_size = 1, padding = 2, padding_mode = 'replicate')
+        self.conv3 = nn.Conv2d(32, 3, kernel_size = 5, padding = 2, padding_mode = 'replicate')
+    
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.conv3(x)
+        return x
+
+
+# In[10]:
+
+# Initializing the model
+model = ConvNet()
+print(model)
+
+
+# In[11]:
+
+# Defining loss and optimizer
+loss_fn = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+
+
+# In[12]:
+
+# Training loop
+# The model is trained for 8 epochs, and three patches are passed to the ConvNet at a time (three because RGB)
+for epoch in range(num_epochs):
+    for i in range(len(patches_list)):
+        X = patches_list[i][0]
+        Y = patches_list[i][1]
+        x_input = torch.Tensor(X).reshape(-1, 3, 8, 8) / 255
+        y_input = torch.Tensor(Y).reshape(-1, 3, 8, 8) / 255
+                
+        optimizer.zero_grad()
+        output = model(x_input)
+        loss = loss_fn(output, y_input)
+        loss.backward()
+        optimizer.step()
+        print(f"Image: {i + 1}, Loss: {loss.item()}")
+    print(f"Epoch: {epoch + 1}")
+
+
+# In[13]:
+
+
+
+
+# In[14]:
+
+# required to create the test set
+class Create_Testset():
+    
+    label = r"C:\Users\Gaurav\Datasets\SoC_Assignment\Test_Dataset"
+    global test_set
+    test_set = []
+    
+    # the function below performs a resize function on the image
+    # in order to unpatchify the image, a criterion needs to be met: (image_width - patch_width) % step_size == 0
+    # therefore, at most three units are knocked out from either dimension to satisfy this criterion. Downsampling is performed.
+    def resize_dim(self, current_dim):
+        width = current_dim[0]
+        height = current_dim[1]
+        while width % 4 != 0:
+            width -= 1
+        while height % 4 != 0:
+            height -=1
+        return (height, width)
+    
+    def create_test_set(self):
+        for f in tqdm(os.listdir(self.label)):
+            path = os.path.join(self.label, f)
+            img_temp = cv.imread(path)
+            current_dim = (img_temp.shape[0], img_temp.shape[1])
+            new_dim = create_testset.resize_dim(current_dim)
+            img = cv.resize(img_temp, new_dim)
+            test_set.append(img)
+
+
+# In[15]:
+
+# creating the test set
+create_testset = Create_Testset()
+create_testset.create_test_set()
+
+
+# In[16]:
+
+# shape of original images is printed simply for more information
+orig_images_array = np.array(test_set, dtype = object)
+for i in range(len(orig_images_array)):
+    print(orig_images_array[i].shape)
+
+
+# In[17]:
+
+# viewing original images
+for i in range(len(orig_images_array)):
+    cv.imshow("Testing" + str(i), orig_images_array[i])
+    cv.waitKey(5000)
+cv.destroyAllWindows()
+
+
+# In[18]:
+
+# creating an array of bicubic upsampled images
+bicubic_list = []
+for i in range(len(orig_images_array)):
+    img = orig_images_array[i]
+    img_lr = cv.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)))
+    img_x = cv.resize(img_lr, (img.shape[1], img.shape[0]), interpolation = cv.INTER_CUBIC)
+    bicubic_list.append(img_x)
+
+bicubic_images_array = np.array(bicubic_list, dtype = object)
+
+
+# In[30]:
+
+# Saving bicubic upsamples images
+for i in range(len(bicubic_images_array)):
+    cv.imwrite(r"C:\Users\Gaurav\Datasets\SoC_Assignment\Bicubic\Image" 
+               + str(i + 1) + ".jpg", bicubic_images_array[i])
+
+
+# In[19]:
+
+# viewing bicubic upsampled images
+for i in range(len(bicubic_images_array)):
+    cv.imshow("Testing " + str(i), bicubic_images_array[i])
+    cv.waitKey(5000)
+cv.destroyAllWindows()
+
+
+# In[20]:
+
+
+# In[21]:
+
+# creating patches of the bicubic images to pass through the ConvNet
+patches_bicubic_list = []
+for i in range(len(bicubic_images_array)):
+    patch = patchify(bicubic_images_array[i], (8, 8, 3), step = 4)
+    patches_bicubic_list.append(patch)
+# array of the patches
+patches_bicubic_array = np.array(patches_bicubic_list, dtype = object)
+print(patches_bicubic_array[0].shape)
+
+
+# In[22]:
+
+# passing the images through the Net and then unpatchifying them and storing within output_images
+output_images = []
+with torch.no_grad():
+    for i in range(len(patches_bicubic_array)):
+        patches = torch.Tensor(patches_bicubic_array[i]).reshape(-1, 3, 8, 8) / 255
+        output = model(patches)
+        output_reshaped = output.reshape(patches_bicubic_array[i].shape) # all correct until here
+        output_patches_array = output_reshaped.numpy()
+        output_image = unpatchify(output_patches_array, orig_images_array[i].shape)
+        output_images.append(output_image)
+
+
+# In[24]:
+
+# saving and viewing the Super Resolved Images
+output_images_array = np.array(output_images, dtype = object)
+for i in range(len(output_images_array)):
+    cv.imwrite(r"C:\Users\Gaurav\Datasets\SoC_Assignment\Output_Overlapping_Patches\Image" 
+               + str(i + 1) + ".jpg", output_images_array[i] * 255)
+    cv.imshow("Super Resolved " + str(i), output_images_array[i])
+    cv.waitKey(5000)
+cv.destroyAllWindows()
