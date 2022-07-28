@@ -2,7 +2,7 @@
 This is my Video Super Resolution Project, under the Seasons of Code Program organized by the Web and Coding Club, IIT Bombay
 
 # Materials Studied
-This is a pretty complicated project, and it is my first introduction to the concept of Machine Learning, and Artificial Intelligence, in general. 
+This is a pretty complicated project, and it is my first introduction to the concept of Machine Learning, and Artificial Intelligence, in general.  
 In the very first week, I was tasked with gaining a decent familiarity with Python, the language of choice for the project, and indeed, as I would come to learn, for most ML applications. I implemented PCA on Python, from scratch (without using any libraries except numpy). 
 Once that was done, the real learning began with the Machine Learning Course on Coursera by Stanford Online (with the instructor being none other than the great Andrew Ng). I have nearly completed that course as well, though for the purposes of the SoC, only the first 4 weeks were required. The first few programming assignments have been added to this repo, the ones after those have not as they're simply not relevant to the project.
 The third week was all about Deep Learning. Again, with no background in Deep Learning, the learning curve seemed pretty steep to me, and the fact that the learning material consisted of 5-hour YT videos did not help. Nevertheless, the content was absolutely amazing, if a bit time-consuming to cover, and I was really thrilled to finally be up to speed on what Deep Learning is and what it consists of. I learnt both PyTorch and TensorFlow, both through YT, though more emphasis was put upon PyTorch as that was the ML framework of choice for the project.
@@ -13,7 +13,7 @@ An interesting thing to note is that even without GPU support, and with training
 Overall, this SoC has been pretty damn great for me. It's the project I was most interested in all summer, and it kept me hooked throughout. It's the first experience I've had in the world of AI and ML, and what an experience it was! Shoutout to my mentors Kartik Gokhale and Hastyn Doshi for this amazing project and for being great mentors. Thank you WnCC for the opportunity. I am extremely grateful
 
 # Files
-The ML_i files are the codes I worked on for the completion of the ML Course on Coursera
+The ML_i files are the codes I worked on for the completion of the ML Course on Coursera.
 The Colour_Image_Super_Resolution file is my own implementation of the SR algorithm, using the famous 9-1-5 architecture. It's advanced(for me) but rudimentary code, as is obvious from the structure of the entire algorithm (no functions, bad structure, repeating code, etc.)
 The ESPCN_Rough_Implementation file is much more refined code. It uses short functions, which is the ideal way to code, as I learnt along the way. The reason it's titled 'Rough" is because it's not as good (refined) as I wanted it to be. The algorithm works fine, but the final portions are not encapsulated within functions (not enough time, as the deadline was nearing) which is how I would like it to be. I intend to improve it after the project is over, which is why it's only like the first draft of a book that needs to be refined.
 For the Image SR part, the dataset used was the T91 dataset, pretty famous for its applicability to SR problems.
