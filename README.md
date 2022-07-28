@@ -14,3 +14,7 @@ Overall, this SoC has been pretty damn great for me. It's the project I was most
 
 # Files
 The ML_i files are the codes I worked on for the completion of the ML Course on Coursera
+The Colour_Image_Super_Resolution file is my own implementation of the SR algorithm, using the famous 9-1-5 architecture. It's advanced(for me) but rudimentary code, as is obvious from the structure of the entire algorithm (no functions, bad structure, repeating code, etc.)
+The ESPCN_Rough_Implementation file is much more refined code. It uses short functions, which is the ideal way to code, as I learnt along the way. The reason it's titled 'Rough" is because it's not as good (refined) as I wanted it to be. The algorithm works fine, but the final portions are not encapsulated within functions (not enough time, as the deadline was nearing) which is how I would like it to be. I intend to improve it after the project is over, which is why it's only like the first draft of a book that needs to be refined.
+For the Image SR part, the dataset used was the T91 dataset, pretty famous for its applicability to SR problems.
+For the Video SR code, the Ultra Video Group dataset was used.
